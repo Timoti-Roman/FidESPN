@@ -3,6 +3,7 @@ package fidespn;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
 
 public class VentanaFanatico extends JFrame {
 
@@ -12,6 +13,9 @@ public class VentanaFanatico extends JFrame {
     private JTextArea areaPartidos;
     private JTextArea areaChat;
     private JTextField txtMensaje;
+
+    // Guardo los mensajes para compartirlos entre las ventanas
+    private static ArrayList<String> mensajesChat = new ArrayList<>();
 
     private final Color azul = new Color(0, 32, 96);
     private final Color amarillo = new Color(255, 192, 0);
@@ -24,7 +28,7 @@ public class VentanaFanatico extends JFrame {
         this.fanatico = fanatico;
 
         setTitle("FidESPN - Fanatico");
-        setSize(720, 580);
+        setSize(720, 620);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
@@ -70,6 +74,8 @@ public class VentanaFanatico extends JFrame {
         // Preparo el chat para escribir mensajes
         areaChat = new JTextArea(8, 30);
         areaChat.setEditable(false);
+        areaChat.setLineWrap(true);
+        areaChat.setWrapStyleWord(true);
 
         JScrollPane scrollChat = new JScrollPane(areaChat);
         scrollChat.setBorder(
@@ -83,6 +89,7 @@ public class VentanaFanatico extends JFrame {
         btnEnviar.setForeground(azul);
 
         btnEnviar.addActionListener(e -> enviarMensaje());
+        txtMensaje.addActionListener(e -> enviarMensaje());
 
         JPanel panelMensaje = new JPanel(
                 new BorderLayout(10, 0));
@@ -90,11 +97,26 @@ public class VentanaFanatico extends JFrame {
         panelMensaje.add(txtMensaje, BorderLayout.CENTER);
         panelMensaje.add(btnEnviar, BorderLayout.EAST);
 
+        JButton btnActualizarChat = new JButton(
+                "ACTUALIZAR CHAT");
+
+        btnActualizarChat.setBackground(amarillo);
+        btnActualizarChat.setForeground(azul);
+
+        btnActualizarChat.addActionListener(
+                e -> mostrarMensajes());
+
+        JPanel controlesChat = new JPanel(
+                new GridLayout(2, 1, 0, 8));
+
+        controlesChat.add(panelMensaje);
+        controlesChat.add(btnActualizarChat);
+
         JPanel panelChat = new JPanel(
                 new BorderLayout(5, 8));
 
         panelChat.add(scrollChat, BorderLayout.CENTER);
-        panelChat.add(panelMensaje, BorderLayout.SOUTH);
+        panelChat.add(controlesChat, BorderLayout.SOUTH);
 
         JPanel contenido = new JPanel(
                 new GridLayout(2, 1, 10, 15));
@@ -138,17 +160,25 @@ public class VentanaFanatico extends JFrame {
             return;
         }
 
-        // Muestro el mensaje con el nombre del fanatico
-        areaChat.append(
-                fanatico.getNombre() + ": " + mensaje + "\n");
+        // Agrego el mensaje a la lista compartida
+        mensajesChat.add(
+                fanatico.getNombre() + ": " + mensaje);
 
         txtMensaje.setText("");
+        mostrarMensajes();
     }
 
-    // Muestro los mensajes del chat
+    // Muestro todos los mensajes guardados
     private void mostrarMensajes() {
 
-        areaChat.setText(
-                "Bienvenido al chat de FidESPN.\n");
+        String texto = "Bienvenido al chat de FidESPN.\n\n";
+
+        for (String mensaje : mensajesChat) {
+            texto += mensaje + "\n";
+        }
+
+        areaChat.setText(texto);
+        areaChat.setCaretPosition(
+                areaChat.getDocument().getLength());
     }
 }
