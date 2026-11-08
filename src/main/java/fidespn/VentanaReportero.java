@@ -3,6 +3,8 @@ package fidespn;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.Comparator;
 
 public class VentanaReportero extends JFrame {
 
@@ -27,7 +29,6 @@ public class VentanaReportero extends JFrame {
     public VentanaReportero(SistemaFidESPN sistema,
                             ReporteroDeportivo reportero) {
 
-        // Guardo el sistema y el reportero que inicio sesion
         this.sistema = sistema;
         this.reportero = reportero;
 
@@ -46,7 +47,7 @@ public class VentanaReportero extends JFrame {
         titulo.setFont(new Font("Arial", Font.BOLD, 23));
         titulo.setForeground(amarillo);
 
-        // Preparo los campos del marcador
+        // Preparo los campos para actualizar el marcador
         cmbPartidos = new JComboBox<>();
 
         spnGolesLocal = new JSpinner(
@@ -107,7 +108,7 @@ public class VentanaReportero extends JFrame {
                 BorderFactory.createTitledBorder(
                         "Informacion del partido"));
 
-        // Preparo los campos de los acontecimientos
+        // Preparo los campos para registrar acontecimientos
         cmbTipoEvento = new JComboBox<>(new String[]{
             "Gol",
             "Tarjeta amarilla",
@@ -168,7 +169,6 @@ public class VentanaReportero extends JFrame {
                 BorderFactory.createTitledBorder(
                         "Historial de acontecimientos"));
 
-        // Organizo las secciones en la ventana
         JPanel contenido = new JPanel();
         contenido.setLayout(
                 new BoxLayout(contenido, BoxLayout.Y_AXIS));
@@ -195,7 +195,6 @@ public class VentanaReportero extends JFrame {
 
         fondo.add(titulo, BorderLayout.NORTH);
         fondo.add(scrollPrincipal, BorderLayout.CENTER);
-
         add(fondo);
 
         cmbPartidos.addActionListener(e -> cargarPartido());
@@ -207,18 +206,16 @@ public class VentanaReportero extends JFrame {
         cargarListaPartidos();
     }
 
-    // Coloco cada campo junto a su nombre
     private void agregarCampo(JPanel panel, String nombre,
                               JComponent componente) {
 
         JLabel etiqueta = new JLabel(nombre);
         etiqueta.setForeground(Color.WHITE);
-
         panel.add(etiqueta);
         panel.add(componente);
     }
 
-    // Compruebo si el partido esta asignado a mi usuario
+    // Compruebo que el partido este asignado a mi usuario
     private boolean tienePermiso(Partido partido) {
 
         return partido != null
@@ -227,7 +224,7 @@ public class VentanaReportero extends JFrame {
                         == reportero.getId();
     }
 
-    // Cargo solamente los partidos que tengo asignados
+    // Muestro solamente mis partidos asignados
     private void cargarListaPartidos() {
 
         cmbPartidos.removeAllItems();
@@ -261,7 +258,6 @@ public class VentanaReportero extends JFrame {
         }
     }
 
-    // Busco el partido seleccionado
     private Partido obtenerPartidoSeleccionado() {
 
         if (cmbPartidos.getSelectedIndex() < 0) {
@@ -276,7 +272,6 @@ public class VentanaReportero extends JFrame {
         try {
 
             int id = Integer.parseInt(partes[0]);
-
             Partido partido = sistema.buscarPartido(id);
 
             if (tienePermiso(partido)) {
@@ -292,7 +287,6 @@ public class VentanaReportero extends JFrame {
         return null;
     }
 
-    // Muestro la informacion del partido seleccionado
     private void cargarPartido() {
 
         Partido partido = obtenerPartidoSeleccionado();
@@ -317,7 +311,7 @@ public class VentanaReportero extends JFrame {
         mostrarAcontecimientos();
     }
 
-    // Actualizo el marcador del partido asignado
+    // Actualizo el marcador cuando necesito corregirlo
     private void actualizarPartido() {
 
         Partido partido = obtenerPartidoSeleccionado();
@@ -349,7 +343,7 @@ public class VentanaReportero extends JFrame {
         cargarPartido();
     }
 
-    // Registro un acontecimiento del partido
+    // Registro el acontecimiento y actualizo el marcador si es gol
     private void registrarAcontecimiento() {
 
         Partido partido = obtenerPartidoSeleccionado();
@@ -379,7 +373,34 @@ public class VentanaReportero extends JFrame {
         int minuto =
                 (Integer) spnMinuto.getValue();
 
-        // Guardo el acontecimiento en el sistema
+        if (tipo.equals("Gol")) {
+
+            int golesLocal = partido.getGolesLocal();
+            int golesVisitante = partido.getGolesVisitante();
+
+            if (equipo.equals(
+                    partido.getEquipoLocal().getNombre())) {
+
+                golesLocal++;
+
+            } else if (equipo.equals(
+                    partido.getEquipoVisitante().getNombre())) {
+
+                golesVisitante++;
+            }
+
+            // Evito superar el limite del marcador
+            if (golesLocal > 99 || golesVisitante > 99) {
+
+                JOptionPane.showMessageDialog(
+                        this, "No se pueden registrar mas de 99 goles.");
+                return;
+            }
+
+            partido.actualizarMarcador(
+                    golesLocal, golesVisitante);
+        }
+
         int id = sistema.getEventos().size() + 1;
 
         EventoPartido evento = new EventoPartido(
@@ -387,16 +408,17 @@ public class VentanaReportero extends JFrame {
 
         sistema.getEventos().add(evento);
 
-        JOptionPane.showMessageDialog(
-                this, "Acontecimiento registrado correctamente.");
-
         txtDescripcion.setText("");
         spnMinuto.setValue(1);
 
-        mostrarAcontecimientos();
+        // Refresco el marcador y el historial
+        cargarPartido();
+
+        JOptionPane.showMessageDialog(
+                this, "Acontecimiento registrado correctamente.");
     }
 
-    // Muestro los acontecimientos del partido seleccionado
+    // Ordeno los acontecimientos por minuto
     private void mostrarAcontecimientos() {
 
         Partido partido = obtenerPartidoSeleccionado();
@@ -406,24 +428,34 @@ public class VentanaReportero extends JFrame {
             return;
         }
 
-        String historial = "";
+        ArrayList<EventoPartido> eventosPartido =
+                new ArrayList<>();
 
         for (EventoPartido evento : sistema.getEventos()) {
 
             if (evento.getPartido().getId() == partido.getId()) {
-
-                historial += evento.mostrarInformacion() + "\n";
+                eventosPartido.add(evento);
             }
         }
 
-        if (historial.isEmpty()) {
+        eventosPartido.sort(
+                Comparator.comparingInt(EventoPartido::getMinuto));
+
+        StringBuilder historial = new StringBuilder();
+
+        for (EventoPartido evento : eventosPartido) {
+            historial.append(evento.mostrarInformacion())
+                    .append("\n");
+        }
+
+        if (historial.length() == 0) {
 
             areaEventos.setText(
                     "Todavia no hay acontecimientos registrados.");
 
         } else {
 
-            areaEventos.setText(historial);
+            areaEventos.setText(historial.toString());
         }
     }
 }
