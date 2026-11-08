@@ -19,6 +19,9 @@ public class VentanaAdministrador extends JFrame {
     private JComboBox<String> cmbHora;
     private JComboBox<String> cmbMinutos;
 
+    private JComboBox<String> cmbPartido;
+    private JComboBox<String> cmbReportero;
+
     private JButton btnFecha;
     private Date fechaSeleccionada = new Date();
 
@@ -29,11 +32,11 @@ public class VentanaAdministrador extends JFrame {
 
     public VentanaAdministrador(SistemaFidESPN sistema) {
 
-        // Guardo el sistema para registrar los partidos
+        // Guardo el sistema para trabajar con los partidos
         this.sistema = sistema;
 
         setTitle("FidESPN - Administrador");
-        setSize(850, 630);
+        setSize(950, 750);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
@@ -47,7 +50,7 @@ public class VentanaAdministrador extends JFrame {
         titulo.setFont(new Font("Arial", Font.BOLD, 22));
         titulo.setForeground(amarillo);
 
-        // Preparo las listas para seleccionar los equipos
+        // Preparo los equipos disponibles
         String[] equipos = {
             "Seleccionar equipo",
             "Argentina", "Brasil", "Costa Rica",
@@ -61,7 +64,6 @@ public class VentanaAdministrador extends JFrame {
         cmbLocal = new JComboBox<>(equipos);
         cmbVisitante = new JComboBox<>(equipos);
 
-        // Preparo la lista de estadios
         String[] estadios = {
             "Seleccionar estadio",
             "Estadio Azteca",
@@ -76,12 +78,10 @@ public class VentanaAdministrador extends JFrame {
 
         cmbEstadio = new JComboBox<>(estadios);
 
-        // Preparo los estados del partido
         cmbEstado = new JComboBox<>(new String[]{
             "Programado", "En juego", "Finalizado"
         });
 
-        // Preparo las horas de 00 a 23
         String[] horas = new String[24];
 
         for (int i = 0; i < 24; i++) {
@@ -91,21 +91,18 @@ public class VentanaAdministrador extends JFrame {
         cmbHora = new JComboBox<>(horas);
         cmbHora.setSelectedItem("18");
 
-        // Preparo los minutos en intervalos de 15
         cmbMinutos = new JComboBox<>(new String[]{
             "00", "15", "30", "45"
         });
 
-        // Creo el boton para abrir el calendario
+        // Preparo el calendario
         btnFecha = new JButton();
         btnFecha.setBackground(Color.WHITE);
         btnFecha.setForeground(azul);
 
         actualizarTextoFecha();
-
         btnFecha.addActionListener(e -> abrirCalendario());
 
-        // Organizo los campos del formulario
         JPanel formulario = new JPanel(
                 new GridLayout(6, 2, 10, 12));
         formulario.setBackground(azul);
@@ -114,7 +111,6 @@ public class VentanaAdministrador extends JFrame {
         agregarCampo(formulario, "Equipo visitante:", cmbVisitante);
         agregarCampo(formulario, "Fecha:", btnFecha);
 
-        // Coloco hora y minutos juntos
         JPanel panelHora = new JPanel(
                 new GridLayout(1, 2, 10, 0));
         panelHora.setBackground(azul);
@@ -141,11 +137,50 @@ public class VentanaAdministrador extends JFrame {
         panelRegistro.add(formulario, BorderLayout.CENTER);
         panelRegistro.add(btnRegistrar, BorderLayout.SOUTH);
 
-        // Creo la tabla con fecha y hora separadas
+        // Preparo la asignacion de reporteros
+        cmbPartido = new JComboBox<>();
+        cmbReportero = new JComboBox<>();
+
+        JPanel formularioAsignacion = new JPanel(
+                new GridLayout(2, 2, 10, 10));
+        formularioAsignacion.setBackground(azul);
+
+        agregarCampo(formularioAsignacion,
+                "Seleccionar partido:", cmbPartido);
+
+        agregarCampo(formularioAsignacion,
+                "Seleccionar reportero:", cmbReportero);
+
+        JButton btnAsignar = new JButton("ASIGNAR REPORTERO");
+        btnAsignar.setBackground(amarillo);
+        btnAsignar.setForeground(azul);
+        btnAsignar.setFont(
+                new Font("Arial", Font.BOLD, 14));
+
+        btnAsignar.addActionListener(e -> asignarReportero());
+
+        JPanel panelAsignacion = new JPanel(
+                new BorderLayout(10, 10));
+        panelAsignacion.setBackground(azul);
+        panelAsignacion.setBorder(
+                BorderFactory.createTitledBorder(
+                        BorderFactory.createLineBorder(amarillo),
+                        "Asignacion de reporteros",
+                        0, 0,
+                        new Font("Arial", Font.BOLD, 14),
+                        Color.WHITE));
+
+        panelAsignacion.add(
+                formularioAsignacion, BorderLayout.CENTER);
+        panelAsignacion.add(
+                btnAsignar, BorderLayout.SOUTH);
+
+        // Muestro tambien el reportero asignado
         modeloTabla = new DefaultTableModel(
                 new String[]{
                     "ID", "Local", "Visitante",
-                    "Fecha", "Hora", "Estadio", "Estado"
+                    "Fecha", "Hora", "Estadio",
+                    "Estado", "Reportero"
                 }, 0) {
 
             @Override
@@ -156,16 +191,33 @@ public class VentanaAdministrador extends JFrame {
 
         JTable tabla = new JTable(modeloTabla);
         tabla.setRowHeight(25);
+        tabla.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+
+        int[] anchos = {45, 110, 110, 95, 60, 170, 95, 140};
+
+        for (int i = 0; i < anchos.length; i++) {
+            tabla.getColumnModel().getColumn(i)
+                    .setPreferredWidth(anchos[i]);
+        }
 
         JScrollPane scroll = new JScrollPane(tabla);
         scroll.setBorder(BorderFactory.createTitledBorder(
                 "Partidos registrados"));
 
+        JPanel panelSuperior = new JPanel(
+                new BorderLayout(10, 15));
+        panelSuperior.setBackground(azul);
+
+        panelSuperior.add(
+                panelRegistro, BorderLayout.NORTH);
+        panelSuperior.add(
+                panelAsignacion, BorderLayout.SOUTH);
+
         JPanel contenido = new JPanel(
                 new BorderLayout(10, 15));
         contenido.setBackground(azul);
 
-        contenido.add(panelRegistro, BorderLayout.NORTH);
+        contenido.add(panelSuperior, BorderLayout.NORTH);
         contenido.add(scroll, BorderLayout.CENTER);
 
         fondo.add(titulo, BorderLayout.NORTH);
@@ -174,9 +226,10 @@ public class VentanaAdministrador extends JFrame {
         add(fondo);
 
         mostrarPartidos();
+        cargarReporteros();
     }
 
-    // Coloco cada nombre junto a su campo
+    // Coloco cada etiqueta junto a su campo
     private void agregarCampo(JPanel panel, String nombre,
                               JComponent componente) {
 
@@ -187,7 +240,7 @@ public class VentanaAdministrador extends JFrame {
         panel.add(componente);
     }
 
-    // Muestro la fecha que tengo seleccionada
+    // Muestro la fecha seleccionada
     private void actualizarTextoFecha() {
 
         SimpleDateFormat formato =
@@ -198,7 +251,7 @@ public class VentanaAdministrador extends JFrame {
                 + "  -  Abrir calendario");
     }
 
-    // Abro el calendario para seleccionar una fecha
+    // Abro el calendario para seleccionar la fecha
     private void abrirCalendario() {
 
         JDialog ventana = new JDialog(
@@ -226,7 +279,6 @@ public class VentanaAdministrador extends JFrame {
         JPanel dias = new JPanel(
                 new GridLayout(0, 7, 3, 3));
 
-        // Actualizo los dias cuando cambio de mes
         Runnable mostrarMes = () -> {
 
             dias.removeAll();
@@ -347,7 +399,6 @@ public class VentanaAdministrador extends JFrame {
 
         int id = sistema.getPartidos().size() + 1;
 
-        // Creo los equipos y guardo el partido
         Equipo equipoLocal = new Equipo(
                 id * 2 - 1, local, "Por definir");
 
@@ -357,8 +408,7 @@ public class VentanaAdministrador extends JFrame {
         sistema.agregarEquipo(equipoLocal);
         sistema.agregarEquipo(equipoVisitante);
 
-        // Guardo la hora junto con la fecha en el objeto
-        // porque la clase Partido aun no tiene un campo de hora
+        // Guardo la fecha y la hora del partido
         Partido partido = new Partido(
                 id, equipoLocal, equipoVisitante,
                 fecha + " " + hora, estadio);
@@ -369,7 +419,6 @@ public class VentanaAdministrador extends JFrame {
         JOptionPane.showMessageDialog(
                 this, "Partido registrado correctamente");
 
-        // Dejo las selecciones listas para otro partido
         cmbLocal.setSelectedIndex(0);
         cmbVisitante.setSelectedIndex(0);
         cmbEstadio.setSelectedIndex(0);
@@ -380,7 +429,82 @@ public class VentanaAdministrador extends JFrame {
         mostrarPartidos();
     }
 
-    // Actualizo la tabla con los partidos registrados
+    // Cargo los partidos que puedo asignar
+    private void cargarPartidos() {
+
+        cmbPartido.removeAllItems();
+        cmbPartido.addItem("Seleccionar partido");
+
+        for (Partido partido : sistema.getPartidos()) {
+
+            cmbPartido.addItem(
+                    partido.getId() + " - "
+                    + partido.getEquipoLocal().getNombre()
+                    + " vs "
+                    + partido.getEquipoVisitante().getNombre());
+        }
+    }
+
+    // Busco los usuarios que son reporteros deportivos
+    private void cargarReporteros() {
+
+        cmbReportero.removeAllItems();
+        cmbReportero.addItem("Seleccionar reportero");
+
+        for (Usuario usuario : sistema.getUsuarios()) {
+
+            if (usuario instanceof ReporteroDeportivo) {
+
+                cmbReportero.addItem(
+                        usuario.getId() + " - "
+                        + usuario.getNombre());
+            }
+        }
+    }
+
+    // Asigno el reportero al partido seleccionado
+    private void asignarReportero() {
+
+        if (cmbPartido.getSelectedIndex() <= 0
+                || cmbReportero.getSelectedIndex() <= 0) {
+
+            JOptionPane.showMessageDialog(
+                    this, "Debes seleccionar un partido y un reportero");
+            return;
+        }
+
+        int indicePartido = cmbPartido.getSelectedIndex() - 1;
+        Partido partido = sistema.getPartidos().get(indicePartido);
+
+        int indiceReportero = cmbReportero.getSelectedIndex() - 1;
+        int contador = 0;
+        ReporteroDeportivo reportero = null;
+
+        for (Usuario usuario : sistema.getUsuarios()) {
+
+            if (usuario instanceof ReporteroDeportivo) {
+
+                if (contador == indiceReportero) {
+                    reportero = (ReporteroDeportivo) usuario;
+                    break;
+                }
+
+                contador++;
+            }
+        }
+
+        if (reportero != null) {
+
+            partido.asignarReportero(reportero);
+
+            JOptionPane.showMessageDialog(
+                    this, "Reportero asignado correctamente");
+
+            mostrarPartidos();
+        }
+    }
+
+    // Actualizo la tabla de partidos registrados
     private void mostrarPartidos() {
 
         modeloTabla.setRowCount(0);
@@ -391,12 +515,18 @@ public class VentanaAdministrador extends JFrame {
             String fecha = fechaCompleta;
             String hora = "";
 
-            // Separo la fecha y la hora para mostrarlas
             String[] partes = fechaCompleta.split(" ");
 
             if (partes.length >= 2) {
                 fecha = partes[0];
                 hora = partes[1];
+            }
+
+            String nombreReportero = "Sin asignar";
+
+            if (partido.getReporteroAsignado() != null) {
+                nombreReportero =
+                        partido.getReporteroAsignado().getNombre();
             }
 
             modeloTabla.addRow(new Object[]{
@@ -406,8 +536,11 @@ public class VentanaAdministrador extends JFrame {
                 fecha,
                 hora,
                 partido.getEstadio(),
-                partido.getEstado()
+                partido.getEstado(),
+                nombreReportero
             });
         }
+
+        cargarPartidos();
     }
 }

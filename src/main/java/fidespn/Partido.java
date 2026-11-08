@@ -11,6 +11,7 @@ public class Partido {
     private int golesLocal;
     private int golesVisitante;
     private String estado;
+    private ReporteroDeportivo reporteroAsignado;
 
     // Guardo los datos principales del partido
     public Partido(int id, Equipo equipoLocal,
@@ -24,6 +25,7 @@ public class Partido {
         this.golesLocal = 0;
         this.golesVisitante = 0;
         this.estado = "Programado";
+        this.reporteroAsignado = null;
     }
 
     public int getId() {
@@ -58,6 +60,15 @@ public class Partido {
         return estado;
     }
 
+    public ReporteroDeportivo getReporteroAsignado() {
+        return reporteroAsignado;
+    }
+
+    // Asigno el reportero que va a cubrir el partido
+    public void asignarReportero(ReporteroDeportivo reportero) {
+        this.reporteroAsignado = reportero;
+    }
+
     // Actualizo el marcador del partido
     public void actualizarMarcador(int golesLocal,
                                   int golesVisitante) {
@@ -81,9 +92,17 @@ public class Partido {
 
     // Muestro los datos del partido
     public String mostrarInformacion() {
+
+        String nombreReportero = "Sin asignar";
+
+        if (reporteroAsignado != null) {
+            nombreReportero = reporteroAsignado.getNombre();
+        }
+
         return mostrarResultado()
                 + "\nFecha: " + fecha
                 + "\nEstadio: " + estadio
-                + "\nEstado: " + estado;
+                + "\nEstado: " + estado
+                + "\nReportero: " + nombreReportero;
     }
 }

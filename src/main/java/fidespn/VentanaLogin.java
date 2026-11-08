@@ -132,8 +132,10 @@ public class VentanaLogin extends JFrame {
 
         } else if (usuario instanceof ReporteroDeportivo) {
 
+            // Envio el reportero que inicio sesion
             VentanaReportero ventana =
-                    new VentanaReportero(sistema);
+                    new VentanaReportero(
+                            sistema, (ReporteroDeportivo) usuario);
 
             ventana.setVisible(true);
 
